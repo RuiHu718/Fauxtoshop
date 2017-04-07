@@ -18,11 +18,13 @@ static const int    BLACK = 0x000000;
 static const int    GREEN = 0x00FF00;
 static const double PI    = 3.14159265;
 
-void     doFauxtoshop(GWindow &gw, GBufferedImage &img);
+void doFauxtoshop(GWindow &gw, GBufferedImage &img);
 
-bool     openImageFromFilename(GBufferedImage& img, string filename);
-bool 	saveImageToFilename(const GBufferedImage &img, string filename);
-void     getMouseClickLocation(int &row, int &col);
+bool openImageFromFilename(GBufferedImage& img, string filename);
+bool saveImageToFilename(const GBufferedImage &img, string filename);
+void getMouseClickLocation(int &row, int &col);
+void scatterImage(GBufferedImage &img);
+void saveImage(GBufferedImage &img);
 
 /* STARTER CODE FUNCTION - DO NOT EDIT
  *
@@ -60,6 +62,7 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
       if (openImageFromFilename(img, line)) {
 	gw.setCanvasSize(img.getWidth(), img.getHeight());
 	gw.add(&img,0,0);
+	//Grid<int> original = img.toGrid();
 
 	cout << "Which image filter would you like to apply?" << endl;
         cout << "1) Scatter" << endl;
@@ -71,8 +74,8 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
 	  int choice = getInteger("Your choice: ");
 	  cout << endl;
 	  if (choice == 1) {
-	    cout << "scatter function" << endl;
-	    // need to save image file eventually
+	    scatterImage(img);
+	    saveImage(img);
 	    break;
 	  } else if (choice == 2) {
 	    cout << "edge detection" << endl;
@@ -93,6 +96,7 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
       }
     }
 
+    //cout << "clean window" << endl;
     gw.clear();			// clean up for the next run
   }
 
@@ -104,6 +108,62 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
   // getMouseClickLocation(row, col);
   // gw.clear();
 }
+
+
+/* Function: scatterImage
+ * Usage:    scatterImage(img);
+ * ----------------------------
+ * Precondition:
+ * Postcondition
+ */
+void scatterImage(GBufferedImage &img) {
+  Grid<int> original = img.toGrid();
+  Grid<int> scattered = Grid<int>(original.numRows(), original.numCols());
+  int degree = 0;
+  
+  while (true) {
+    degree = getInteger("Enter degree of scatter (1-100): ");
+    if (degree >= 1 && degree <= 100) break;
+  }
+
+  for (int i = 0; i < scattered.numRows(); i++) {
+    for (int j = 0; j < scattered.numCols(); j++) {
+      int row = 0;
+      int col = 0;
+      while (true) {
+	row = randomInteger(i - degree, i + degree);
+	if (row >=0 && row < scattered.numRows()) break;
+      }
+      while (true) {
+	col = randomInteger(j - degree, j + degree);
+	if (col >=0 && col < scattered.numCols()) break;
+      }
+      scattered.set(i, j, original[row][col]);
+    }
+  }
+
+  img.fromGrid(scattered);
+}
+
+
+/* Function: saveImage
+ * Usage:    saveImage(img)
+ * ------------------------
+ */
+void saveImage(GBufferedImage &img) {
+  while (true) {
+    cout << "Enter file name to save image (or blank to skip saving)" << endl;
+    string line = getLine();
+    if (line == "") {
+      break;
+    } else {
+      if (saveImageToFilename(img, line)) {
+	break;
+      }
+    }
+  }  
+}
+
 
 
 /* STARTER CODE HELPER FUNCTION - DO NOT EDIT
