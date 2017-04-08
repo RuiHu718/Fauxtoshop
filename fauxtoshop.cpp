@@ -24,6 +24,7 @@ bool saveImageToFilename(const GBufferedImage &img, string filename);
 void getMouseClickLocation(int &row, int &col);
 void scatterImage(GBufferedImage &img);
 void edgeDetection(GBufferedImage &img);
+void greenScreen(GBufferedImage &img);
 void saveImage(GBufferedImage &img);
 int calcDifference(int x, int y);
 bool isEdge(int threshold, int i, int j, const Grid<int> &original);
@@ -88,7 +89,8 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
 	    saveImage(img);
   	    break;
   	  } else if (choice == 3) {
-  	    cout << "green screen" << endl;
+	    greenScreen(img);
+	    saveImage(img);
   	    break;
   	  } else if (choice == 4) {
   	    cout << "compare" << endl;
@@ -181,6 +183,54 @@ void edgeDetection(GBufferedImage & img) {
   }
 
   img.fromGrid(edge);
+}
+
+
+/* Function: greenScreen()
+ * Usage:    greenScreen(img)
+ * ---------------------------
+ * Precondition:
+ * Postcondition:
+ */
+void greenScreen(GBufferedImage &img) {
+  GBufferedImage sticker;
+  int row, col;
+  while (true) {
+    cout << "Enter the filename for sticker image: " << endl;
+    string filename = getLine();
+    if (openImageFromFilename(sticker, filename)) break;
+  }
+ 
+  Grid<int> original = img.toGrid(); 
+  Grid<int> stickerG = sticker.toGrid();
+  
+  int tolerance = 0;
+  while (true) {
+    tolerance = getInteger("Enter tolerance for green screen: ");
+    if (tolerance >= 0) break;
+  }
+
+  while (true) {
+    cout << "Enter location to place image (or blank to use mouse)" << endl;
+    string line = getLine();
+    if (line == "") {
+      cout << "Now click the background image to place new image: " << endl;
+      getMouseClickLocation(row, col);
+      cout << "You choose: (" << row << ", " << col << ")" << endl;
+      break;
+    }
+  }
+
+  for (int i = 0; i < stickerG.numRows(); i++) {
+    for (int j = 0; j < stickerG.numCols(); j++) {
+      if ((calcDifference(stickerG[i][j], 0x00FF00) > tolerance) &&
+	  original.inBounds(i+row, j+col)) {
+	original.set(i+row, j+col, stickerG[i][j]);
+      }
+    }
+  }
+
+  img.fromGrid(original);
 }
 
 
