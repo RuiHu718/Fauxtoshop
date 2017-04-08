@@ -25,6 +25,7 @@ void getMouseClickLocation(int &row, int &col);
 void scatterImage(GBufferedImage &img);
 void edgeDetection(GBufferedImage &img);
 void greenScreen(GBufferedImage &img);
+void compareImage(GBufferedImage &img);
 void saveImage(GBufferedImage &img);
 int calcDifference(int x, int y);
 bool isEdge(int threshold, int i, int j, const Grid<int> &original);
@@ -93,7 +94,7 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
 	    saveImage(img);
   	    break;
   	  } else if (choice == 4) {
-  	    cout << "compare" << endl;
+	    compareImage(img);
   	    break;
   	  } else {
   	    cout << "Wrong input, select again: " << endl;
@@ -231,6 +232,26 @@ void greenScreen(GBufferedImage &img) {
   }
 
   img.fromGrid(original);
+}
+
+
+/* Function: compareImage()
+ * Usage:    
+ * ------------------------
+ * Precondition
+ * Postcondition
+ */
+void compareImage(GBufferedImage &img) {
+  GBufferedImage target;
+  while (true) {
+    cout << "Enter the filename for comparision: " << endl;
+    string filename = getLine();
+    if (openImageFromFilename(target, filename)) break;
+  }
+
+  int numDiff = img.countDiffPixels(target);
+
+  cout << "There are " << numDiff << " places are difference " << endl;
 }
 
 
