@@ -19,12 +19,14 @@ static const int    GREEN = 0x00FF00;
 static const double PI    = 3.14159265;
 
 void doFauxtoshop(GWindow &gw, GBufferedImage &img);
-
 bool openImageFromFilename(GBufferedImage& img, string filename);
 bool saveImageToFilename(const GBufferedImage &img, string filename);
 void getMouseClickLocation(int &row, int &col);
 void scatterImage(GBufferedImage &img);
+void edgeDetection(GBufferedImage &img);
 void saveImage(GBufferedImage &img);
+int calcDifference(int x, int y);
+bool isEdge(int threshold, int i, int j, const Grid<int> &original);
 
 /* STARTER CODE FUNCTION - DO NOT EDIT
  *
@@ -53,6 +55,10 @@ int main() {
 void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
   cout << "Welcome to Fauxtoshop!" << endl;
 
+  // openImageFromFilename(img, "kitten.jpg");
+  // Grid<int> original = img.toGrid();  
+  // cout << calcDifference(original[1][20], original[2][100]) << endl;
+
   while (true) {
     cout << "Enter name of image file to open (or blank to quit)" << endl;    
     string line = getLine();
@@ -60,44 +66,46 @@ void doFauxtoshop(GWindow &gw, GBufferedImage &img) {
       break;			// terminate program
     } else {
       if (openImageFromFilename(img, line)) {
-	gw.setCanvasSize(img.getWidth(), img.getHeight());
-	gw.add(&img,0,0);
-	//Grid<int> original = img.toGrid();
+  	gw.setCanvasSize(img.getWidth(), img.getHeight());
+  	gw.add(&img,0,0);
+  	//Grid<int> original = img.toGrid();
 
-	cout << "Which image filter would you like to apply?" << endl;
+  	cout << "Which image filter would you like to apply?" << endl;
         cout << "1) Scatter" << endl;
         cout << "2) Edge detection" << endl;
         cout << "3) Green screen with another image" << endl;
         cout << "4) Compare with another image" << endl;
 
-	while (true) {
-	  int choice = getInteger("Your choice: ");
-	  cout << endl;
-	  if (choice == 1) {
-	    scatterImage(img);
+  	while (true) {
+  	  int choice = getInteger("Your choice: ");
+  	  cout << endl;
+  	  if (choice == 1) {
+  	    scatterImage(img);
+  	    saveImage(img);
+  	    break;
+  	  } else if (choice == 2) {
+	    edgeDetection(img);
 	    saveImage(img);
-	    break;
-	  } else if (choice == 2) {
-	    cout << "edge detection" << endl;
-	    break;
-	  } else if (choice == 3) {
-	    cout << "green screen" << endl;
-	    break;
-	  } else if (choice == 4) {
-	    cout << "compare" << endl;
-	    break;
-	  } else {
-	    cout << "Wrong input, select again: " << endl;
-	    continue;
-	  }
-	}
+  	    break;
+  	  } else if (choice == 3) {
+  	    cout << "green screen" << endl;
+  	    break;
+  	  } else if (choice == 4) {
+  	    cout << "compare" << endl;
+  	    break;
+  	  } else {
+  	    cout << "Wrong input, select again: " << endl;
+  	    continue;
+  	  }
+  	}
       }else {
-	cout << "Invalid file name, try again: " << endl;
+  	cout << "Invalid file name, try again: " << endl;
       }
     }
 
     //cout << "clean window" << endl;
     gw.clear();			// clean up for the next run
+
   }
 
   // GBufferedImage img2;
@@ -143,6 +151,94 @@ void scatterImage(GBufferedImage &img) {
   }
 
   img.fromGrid(scattered);
+}
+
+
+/* Function: edgeDetection
+ * Usage:    edgeDetection(img)
+ * ----------------------------
+ * Precondition:
+ * Postcondition:
+ */
+void edgeDetection(GBufferedImage & img) {
+  Grid<int> original = img.toGrid();
+  Grid<int> edge = Grid<int>(original.numRows(), original.numCols());
+  int threshold = 0;
+  
+  while (true) {
+    threshold = getInteger("Enter threshold for edge detection (positive int): ");
+    if (threshold > 0) break;
+  }
+
+  for (int i = 0; i < edge.numRows(); i++) {
+    for (int j = 0; j < edge.numCols(); j++) {
+      if (isEdge(threshold, i, j, original)) {
+	edge.set(i, j, 0x000000); // set it to color black
+      } else {
+	edge.set(i, j, 0xFFFFFF); // set it to color white
+      }
+    }
+  }
+
+  img.fromGrid(edge);
+}
+
+
+/* Function: isEdge
+ * Usage:    if(isEdge())
+ * ------------------------
+ * Precondtion:
+ * Postcondition;
+ */
+bool isEdge(int threshold, int i, int j, const Grid<int> &original) {
+  if (original.inBounds(i-1, j) &&
+      calcDifference(original[i][j], original[i-1][j]) > threshold) {
+    return true;
+  } else if (original.inBounds(i+1, j) &&
+      calcDifference(original[i][j], original[i+1][j]) > threshold) {
+    return true;
+  } else if (original.inBounds(i, j-1) &&
+      calcDifference(original[i][j], original[i][j-1]) > threshold) {
+    return true;
+  } else if (original.inBounds(i, j+1) &&
+      calcDifference(original[i][j], original[i][j+1]) > threshold) {
+    return true;
+  } else if (original.inBounds(i-1, j-1) &&
+      calcDifference(original[i][j], original[i-1][j-1]) > threshold) {
+    return true;
+  } else if (original.inBounds(i-1, j+1) &&
+      calcDifference(original[i][j], original[i-1][j+1]) > threshold) {
+    return true;
+  } else if (original.inBounds(i+1, j-1) &&
+      calcDifference(original[i][j], original[i+1][j-1]) > threshold) {
+    return true;
+  } else if (original.inBounds(i+1, j+1) &&
+      calcDifference(original[i][j], original[i+1][j+1]) > threshold) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+
+/* Function: calcDifference
+ * Usage: int a = calcDifference(x, y)
+ * ----------------------------------
+ * Calculates the color difference according 
+ * To algorithm specified by the assignment handout
+ * Precondition:
+ * Poistcondition:
+ */
+int calcDifference(int x, int y) {
+  int x_red, x_green, x_blue;
+  int y_red, y_green, y_blue;
+  GBufferedImage::getRedGreenBlue(x, x_red, x_green, x_blue);
+  GBufferedImage::getRedGreenBlue(y, y_red, y_green, y_blue);
+
+  // cout << x_red << "," << x_green << "," << x_blue << endl;
+  // cout << y_red << "," << y_green << "," << y_blue << endl;
+  return max(max(abs(x_red - y_red), abs(x_green - y_green)), abs(x_blue - y_blue));
 }
 
 
